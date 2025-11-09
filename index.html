@@ -1,16 +1,51 @@
-<html lang="en"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wegez.fi Landing Page</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Optional: Set a nice, modern font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
 
-    <title>Wegez.fi</title>
+    <div class="max-w-xl w-full bg-gray-800 p-8 md:p-10 shadow-2xl rounded-xl border border-gray-700 text-center">
 
-  <body class="notify-system-light dark">
-    <div class="container">
-      <div class="header">
-        <h3>Wegez.fi</h3>
-        <h1>Welcome to Wegez.fi</h1>
-        <p>
-          You can waste your nano here, or you can leave, those are your only options :)
-<script src="https://xnoverse.com/cdn/min/xnoverse-core.min.js"></script>
-<div class="xno-paywall" data-paywall-key="H8gRCxd5j5MaAG"></div>
-            </body></html>
+        <!-- User-Provided Text -->
+        <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
+            Welcome to Wegez.fi
+        </h1>
+        <p class="text-lg text-gray-300 mb-8">
+            You can waste your nano here, or you can leave, those are your only options :)
+        </p>
+        
+        <!-- Paywall Section Header -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-red-400 mb-2">Access Control Active</h2>
+            <p class="text-sm text-gray-400">
+                The content below is protected by the xnoverse paywall.
+            </p>
+        </div>
+
+        <!-- Paywall Script and Div (as requested by the user) -->
+        <!-- The paywall content will be loaded and displayed by the external script -->
+        <div class="xno-paywall border-2 border-dashed border-indigo-700 p-6 rounded-lg bg-indigo-900/50" 
+             data-paywall-key="H8gRCxd5j5MaAG">
+            <p class="text-indigo-300 font-medium">
+                Loading xnoverse paywall...
+            </p>
+        </div>
+        
+        <!-- External Script Tag -->
+        <script src="https://xnoverse.com/cdn/min/xnoverse-core.min.js"></script>
+        
+    </div>
+
+</body>
+</html>
