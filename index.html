@@ -49,43 +49,8 @@
             You can waste your nano here, or you can leave - those are your only options :)
         </p>
         
-        <!-- Paywall Section Header -->
-        <div class="mb-6">
-            <h2 class="text-xl font-semibold text-red-400 mb-2">Access Control Active</h2>
-            <p class="text-sm text-gray-400">
-                The content below is protected by the xnoverse paywall.
-            </p>
-        </div>
-
-        <!-- Paywall Container with Accessibility and Loading Animation -->
-        <div class="xno-paywall border-2 border-dashed border-indigo-700 p-6 rounded-lg bg-indigo-900/50"
-             data-paywall-key="H8gRCxd5j5MaAG">
-            <p id="paywall-status" class="text-indigo-300 font-medium animate-pulse" 
-               aria-live="polite">
-                Loading xnoverse paywall...
-            </p>
-        </div>
-
-        <!-- Load external paywall script -->
-        <script src="https://xnoverse.com/cdn/min/xnoverse-core.min.js"
-                integrity=""
-                crossorigin="anonymous"
-                onerror="document.getElementById('paywall-status').textContent='ERROR: Paywall failed to load. Check connection or contact support.';">
-        </script>
-
-        <!-- Fallback for script not initializing properly -->
-        <script>
-            setTimeout(() => {
-                const status = document.getElementById('paywall-status');
-                const el = document.querySelector('.xno-paywall');
-
-                // Check if the paywall element exists AND is still showing the default loading text
-                if (el && status && status.textContent.includes('Loading xnoverse paywall')) {
-                    status.textContent = 'Paywall is taking longer than expected to load. Check your connection.';
-                    status.classList.remove('animate-pulse');
-                }
-            }, 6000);
-        </script>
+<script src="https://xnoverse.com/cdn/min/xnoverse-core.min.js"></script>
+<div class="xno-paywall" data-paywall-key="H8gRCxd5j5MaAG"></div>
 
     </main>
     
@@ -103,6 +68,7 @@
 </body>
 
 </html>
+
 
 
 
