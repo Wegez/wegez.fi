@@ -32,26 +32,27 @@
         }
     </style>
     
-    <!-- Strengthened Content Security Policy (CSP) for production -->
 <meta http-equiv="Content-Security-Policy" content="
-  default-src 'self';
-  script-src 'self' 'unsafe-inline'
-              https://cdn.tailwindcss.com
-              https://xnoverse.com
-              https://*.xnoverse.com;
-  style-src  'self' 'unsafe-inline'
-              https://cdn.tailwindcss.com
-              https://fonts.googleapis.com;
-  img-src    'self' data: https:;
-  connect-src 'self'
-              https://xnoverse.com
-              https://*.xnoverse.com;
-  font-src   'self'
-              https://fonts.gstatic.com
-              https://fonts.googleapis.com;
-  object-src 'none';
-  base-uri   'self';
-    " />
+    default-src 'self';
+    script-src 'self' 'unsafe-inline'
+                 https://cdn.tailwindcss.com
+                 https://xnoverse.com
+                 https://*.xnoverse.com
+                 https://xnoverse.com/cdn/min/xnoverse-core.min.js;
+    style-src 'self' 'unsafe-inline'
+                https://cdn.tailwindcss.com
+                https://fonts.googleapis.com;
+    img-src 'self' data: https:;
+    connect-src 'self'
+                  https://xnoverse.com
+                  https://*.xnoverse.com;
+    font-src 'self'
+               https://fonts.gstatic.com
+               https://fonts.googleapis.com;
+    frame-src 'self' https://xnoverse.com https://*.xnoverse.com; 
+    frame-ancestors 'none';
+    object-src 'none';
+    base-uri 'self';" />
 </head>
 
 <body class="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
@@ -122,6 +123,7 @@
 </body>
 
 </html>
+
 
 
 
