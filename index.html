@@ -1,28 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Wegez.fi Landing Page</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Basic SEO -->
+    <meta name="description" content="Welcome to Wegez.fi — explore, engage, or leave. Access protected content through the xnoverse paywall." />
+    <meta name="keywords" content="Wegez, xnoverse, nano, crypto, paywall, access control" />
+    <meta name="author" content="Wegez.fi" />
+
+    <!-- Open Graph (social sharing) -->
+    <meta property="og:title" content="Wegez.fi Landing Page" />
+    <meta property="og:description" content="Welcome to Wegez.fi — explore or leave. Content protected by the xnoverse paywall." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://wegez.fi/" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+
+    <!-- Performance: Preload Google Fonts and link Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        /* Optional: Set a nice, modern font */
+        /* Ensures the Inter font is used */
         body {
             font-family: 'Inter', sans-serif;
         }
     </style>
+    
+    <!-- Strengthened Content Security Policy (CSP) for production -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' https://cdn.tailwindcss.com https://xnoverse.com;
+        style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
+        img-src 'self' data: https:;
+        connect-src 'self' https://xnoverse.com;
+        font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com;
+        frame-ancestors 'none';
+        object-src 'none';
+        base-uri 'self';
+    " />
 </head>
-<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
 
-    <div class="max-w-xl w-full bg-gray-800 p-8 md:p-10 shadow-2xl rounded-xl border border-gray-700 text-center">
+<body class="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Content Card -->
+    <main class="max-w-xl w-full bg-gray-800 p-8 md:p-10 shadow-2xl rounded-3xl border border-gray-700 text-center 
+                 transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.01]">
 
         <!-- User-Provided Text -->
         <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
             Welcome to Wegez.fi
         </h1>
         <p class="text-lg text-gray-300 mb-8">
-            You can waste your nano here, or you can leave, those are your only options :)
+            You can waste your nano here, or you can leave — those are your only options :)
         </p>
         
         <!-- Paywall Section Header -->
@@ -33,19 +68,48 @@
             </p>
         </div>
 
-        <!-- Paywall Script and Div (as requested by the user) -->
-        <!-- The paywall content will be loaded and displayed by the external script -->
-        <div class="xno-paywall border-2 border-dashed border-indigo-700 p-6 rounded-lg bg-indigo-900/50" 
+        <!-- Paywall Container with Accessibility and Loading Animation -->
+        <div class="xno-paywall border-2 border-dashed border-indigo-700 p-6 rounded-lg bg-indigo-900/50"
              data-paywall-key="H8gRCxd5j5MaAG">
-            <p class="text-indigo-300 font-medium">
+            <p id="paywall-status" class="text-indigo-300 font-medium animate-pulse" 
+               aria-live="polite">
                 Loading xnoverse paywall...
             </p>
         </div>
-        
-        <!-- External Script Tag -->
-        <script src="https://xnoverse.com/cdn/min/xnoverse-core.min.js"></script>
-        
-    </div>
+
+        <!-- Load external paywall script -->
+        <script src="https://xnoverse.com/cdn/min/xnoverse-core.min.js"
+                integrity=""
+                crossorigin="anonymous"
+                onerror="document.getElementById('paywall-status').textContent='ERROR: Paywall failed to load. Check connection or contact support.';">
+        </script>
+
+        <!-- Fallback for script not initializing properly -->
+        <script>
+            setTimeout(() => {
+                const status = document.getElementById('paywall-status');
+                const el = document.querySelector('.xno-paywall');
+
+                // Check if the paywall element exists AND is still showing the default loading text
+                if (el && status && status.textContent.includes('Loading xnoverse paywall')) {
+                    status.textContent = 'Paywall is taking longer than expected to load. Check your connection.';
+                    status.classList.remove('animate-pulse');
+                }
+            }, 6000);
+        </script>
+
+    </main>
+    
+    <!-- Footer Section -->
+    <footer class="mt-8 text-center text-gray-500 text-xs">
+        &copy; 2025 Wegez.fi. All rights reserved. | 
+        <a href="/privacy.html" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors">
+            Privacy Policy
+        </a>
+    </footer>
+
+    <!-- Tailwind CSS (Moved to end of body for slight performance improvement) -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
 </body>
 </html>
