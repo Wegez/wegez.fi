@@ -1,77 +1,668 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>Wegez.fi</title>
-
-    <!-- Basic SEO -->
-    <meta name="description" content="Welcome to Wegez.fi - explore, engage, or leave. Access protected content through the xnoverse paywall." />
-    <meta name="keywords" content="Wegez, xnoverse, nano, crypto, paywall, access control" />
-    <meta name="author" content="Wegez.fi" />
-
-    <!-- Open Graph (social sharing) -->
-    <meta property="og:title" content="Wegez.fi Landing Page" />
-    <meta property="og:description" content="Welcome to Wegez.fi - explore or leave. Content protected by the xnoverse paywall." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://wegez.fi/" />
-
-    <!-- Favicon -->
-    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-
-    <!-- Performance: Preload Google Fonts and link Inter font -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Wegez.fi — Minesweeper</title>
+    <meta name="description" content="Wegez.fi Minesweeper — modern dark theme, large grid."/>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; img-src 'self' data:; connect-src 'self'; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; object-src 'none'; base-uri 'self';"/>
+    
     <style>
-        /* Ensures the Inter font is used */
+        :root {
+            --bg: #0b0f16;
+            --card: #0f1720;
+            --muted: #94a3b8;
+            --accent: #6366f1;
+            --tile: #111827;
+            --tile-border: rgba(255, 255, 255, 0.04);
+            --tile-hover: rgba(99, 102, 241, 0.06);
+            --flag: #ef4444;
+            --bomb: #ffb86b;
+        }
+        
+        html, body {
+            height: 100%;
+        }
+        
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg, #071029 0%, #0b1220 100%);
+            color: #e6eef8;
+            margin: 0;
+        }
+        
+        .board {
+            display: grid;
+            gap: 6px;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        /* Cell sizing based on board size */
+        .cell {
+            width: 28px;
+            height: 28px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            border-radius: 6px;
+            background: linear-gradient(180deg, var(--tile), #0b1220);
+            border: 1px solid var(--tile-border);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+            cursor: pointer;
+            color: var(--bg);
+        }
+        
+        /* Sizing adjustments for larger grids */
+        [data-size="30"] .cell {
+            width: 22px;
+            height: 22px;
+            font-size: 11px;
+        }
+
+        [data-size="40"] .cell {
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+        }
+        
+        .cell.uncovered {
+            background: linear-gradient(180deg, #0b1220, #0b1a28);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--muted);
+            cursor: default;
+            box-shadow: none;
+        }
+        
+        .cell.flagged {
+            background: linear-gradient(180deg, #2b0f12, #3a0d11);
+            color: var(--flag);
+        }
+        
+        .cell.bomb {
+            background: linear-gradient(180deg, #3a1f12, #2b0f09);
+            color: var(--bomb);
+        }
+        
+        .controls {
+            gap: 10px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: .5rem .75rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .small {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        
+        .stats {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .flex-center {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Original media query kept, though most sizing is handled via data-size now */
+        @media (max-width: 900px) {
+            .cell {
+                width: 22px;
+                height: 22px;
+                font-size: 11px;
+            }
         }
     </style>
-    
-
 </head>
 
-<body class="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
-
-    <!-- Main Content Card -->
-    <main class="max-w-xl w-full bg-gray-800 p-8 md:p-10 shadow-2xl rounded-3xl border border-gray-700 text-center 
-                 transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.01]">
-
-        <!-- User-Provided Text -->
-        <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
-            Welcome to Wegez.fi
-        </h1>
-        <p class="text-lg text-gray-300 mb-8">
-            You can waste your nano here, or you can leave - those are your only options :)
-        </p>
+<body class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-7xl">
         
-<script src="https://xnoverse.com/cdn/min/xnoverse-core.min.js"></script>
-<div class="xno-paywall" data-paywall-key="H8gRCxd5j5MaAG"></div>
-
-    </main>
+        <header class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-extrabold">Wegez.fi — Minesweeper</h1>
+                <p class="text-sm text-gray-400">Modern dark theme — waste more time :)</p>
+            </div>
+            <div class="controls">
+                <div class="stats small">
+                    <span id="mine-count">Mines: 0</span>
+                    <span id="flags-left">Flags: 0</span>
+                </div>
+                <button id="reset-btn" class="btn">New Game</button>
+            </div>
+        </header>
+        
+        <main class="bg-gradient-to-br from-[#071428] to-[#07101b] p-6 rounded-2xl shadow-xl">
+            
+            <section class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <label class="small">Grid</label>
+                    <select id="size-select" class="btn">
+                        <option value="24">24 × 24</option>
+                        <option value="30">30 × 30</option>
+                        <option value="40" selected>40 × 40</option>
+                    </select>
+                    
+                    <label class="small">Mines</label>
+                    <input id="mines-range" type="range" min="10" max="1000" step="1" value="250" style="width:220px">
+                    <span id="mines-label" class="small ml-2">250</span>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <div class="small">Left-click: reveal • Right-click: flag</div>
+                </div>
+            </section>
+            
+            <div id="board-wrap" class="overflow-auto" style="max-height:70vh; overscroll-behavior:contain;">
+                <div id="board" class="board" data-size="40"></div>
+            </div>
+            
+        </main>
+        
+        <footer class="mt-6 text-sm text-gray-400">Tip: Click a revealed number with the correct number of flags around it to chord (reveal adjacent cells).</footer>
+        
+    </div>
     
-    <!-- Footer Section -->
-    <footer class="mt-8 text-center text-gray-500 text-xs">
-        &copy; 2025 Wegez.fi. All rights reserved. | 
-        <a href="/privacy.html" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors">
-            Privacy Policy
-        </a>
-    </footer>
+    <script>
+        (function() {
+            // --- DOM Elements ---
+            const boardEl = document.getElementById('board');
+            const mineCountEl = document.getElementById('mine-count');
+            const flagsLeftEl = document.getElementById('flags-left');
+            const resetBtn = document.getElementById('reset-btn');
+            const sizeSelect = document.getElementById('size-select');
+            const minesRange = document.getElementById('mines-range');
+            const minesLabel = document.getElementById('mines-label');
 
-    <!-- Tailwind CSS (Moved to end of body for slight performance improvement) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+            // --- Game State Variables ---
+            let size = parseInt(sizeSelect.value, 10);
+            let width = size;
+            let height = size;
+            let mineCount = parseInt(minesRange.value, 10);
+            let cells = []; // DOM elements for cells
+            let board = []; // Logical representation of the board
+            let flags = 0;
+            let revealedCount = 0;
+            let gameOver = false;
 
+            // --- Control and Initialization Functions ---
+
+            function setDefaultsFromControls() {
+                size = parseInt(sizeSelect.value, 10);
+                width = size;
+                height = size;
+                
+                const maxMines = Math.max(10, Math.floor(width * height * 0.45));
+                minesRange.max = maxMines;
+                
+                if (parseInt(minesRange.value, 10) > maxMines) {
+                    minesRange.value = Math.floor(width * height * 0.155);
+                }
+                
+                mineCount = parseInt(minesRange.value, 10);
+                minesLabel.textContent = mineCount;
+            }
+
+            function createEmptyBoard() {
+                board = new Array(width * height).fill(0).map(() => ({
+                    mine: false,
+                    adj: 0,
+                    revealed: false,
+                    flagged: false
+                }));
+            }
+            
+            // Fisher-Yates shuffle algorithm
+            function shuffle(array) {
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex !== 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            }
+
+
+            // --- Utility Functions ---
+
+            function inBounds(x, y) {
+                return x >= 0 && y >= 0 && x < width && y < height;
+            }
+
+            function idx(x, y) {
+                return y * width + x;
+            }
+
+            function xy(i) {
+                return {
+                    x: i % width,
+                    y: Math.floor(i / width)
+                };
+            }
+
+            function colorForNumber(n) {
+                const map = {
+                    1: '#3b82f6', // blue
+                    2: '#16a34a', // green
+                    3: '#ef4444', // red
+                    4: '#7c3aed', // purple
+                    5: '#ea580c', // orange
+                    6: '#06b6d4', // cyan
+                    7: '#374151', // slate
+                    8: '#0f172a'  // dark slate
+                };
+                return map[n] || '#94a3b8';
+            }
+
+            function updateStats() {
+                mineCountEl.textContent = 'Mines: ' + mineCount;
+                flagsLeftEl.textContent = 'Flags: ' + flags;
+            }
+
+            // --- Game Logic Functions ---
+
+            function placeMines(firstClickIdx) {
+                const total = width * height;
+                const allIndices = Array.from({ length: total }, (_, i) => i);
+                const fc = xy(firstClickIdx);
+                
+                // Identify the 3x3 forbidden area indices
+                const forbiddenIndices = new Set();
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const nx = fc.x + dx;
+                        const ny = fc.y + dy;
+                        if (inBounds(nx, ny)) {
+                            forbiddenIndices.add(idx(nx, ny));
+                        }
+                    }
+                }
+                
+                // Get list of safe indices
+                const safeIndices = allIndices.filter(i => !forbiddenIndices.has(i));
+
+                // Improved Efficiency: Shuffle safe indices and pick the first mineCount
+                shuffle(safeIndices);
+                const mineLocations = safeIndices.slice(0, mineCount);
+                
+                if (mineLocations.length < mineCount) {
+                    console.error("Not enough space for mines after initial click protection.");
+                    mineCount = mineLocations.length; // Adjust mine count down if necessary
+                }
+
+                // Place the mines
+                for (const i of mineLocations) {
+                    board[i].mine = true;
+                }
+
+                // Calculate adjacent mine counts
+                for (let i = 0; i < total; i++) {
+                    const p = xy(i);
+                    if (board[i].mine) {
+                        board[i].adj = -1;
+                        continue;
+                    }
+                    
+                    let adj = 0;
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (dx === 0 && dy === 0) continue;
+                            
+                            const nx = p.x + dx;
+                            const ny = p.y + dy;
+                            
+                            if (inBounds(nx, ny) && board[idx(nx, ny)].mine) {
+                                adj++;
+                            }
+                        }
+                    }
+                    board[i].adj = adj;
+                }
+            }
+
+            function buildDOM() {
+                boardEl.innerHTML = '';
+                boardEl.style.gridTemplateColumns = `repeat(${width}, 1fr)`; // Use 1fr for flex grid size
+                boardEl.dataset.size = size; // Set data attribute for CSS sizing
+                cells = [];
+                
+                // DOM Efficiency: Use a Document Fragment
+                const fragment = document.createDocumentFragment();
+
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const el = document.createElement('button');
+                        el.className = 'cell';
+                        el.dataset.index = idx(x, y);
+                        el.setAttribute('aria-label', 'covered cell');
+                        
+                        // Event listeners
+                        el.addEventListener('click', onLeftClick);
+                        el.addEventListener('contextmenu', onRightClick);
+                        el.addEventListener('dblclick', onChordAttempt);
+                        
+                        fragment.appendChild(el);
+                        cells.push(el);
+                    }
+                }
+                
+                boardEl.appendChild(fragment);
+            }
+
+            function revealCell(i) {
+                if (gameOver) return;
+                
+                const cell = board[i];
+                const el = cells[i];
+
+                if (cell.revealed || cell.flagged) return;
+
+                cell.revealed = true;
+                revealedCount++;
+                
+                el.classList.add('uncovered');
+
+                if (cell.mine) {
+                    el.classList.add('bomb');
+                    el.textContent = '💣';
+                    el.setAttribute('aria-label', 'Mine (game over)');
+                    loseGame();
+                    return;
+                }
+
+                // Accessibility improvement: update aria-label for revealed number
+                if (cell.adj > 0) {
+                    el.textContent = cell.adj;
+                    el.style.color = colorForNumber(cell.adj);
+                    el.setAttribute('aria-label', `${cell.adj} mines adjacent`);
+                } else {
+                    el.textContent = '';
+                    el.setAttribute('aria-label', 'Empty cell');
+                    
+                    // Flood fill (auto-reveal adjacent empty cells)
+                    const queue = [i];
+                    while (queue.length) {
+                        const cur = queue.shift();
+                        const p = xy(cur);
+                        
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const nx = p.x + dx;
+                                const ny = p.y + dy;
+                                
+                                if (!inBounds(nx, ny)) continue;
+                                
+                                const ni = idx(nx, ny);
+                                const nb = board[ni];
+                                const nel = cells[ni];
+                                
+                                if (!nb.revealed && !nb.flagged) {
+                                    nb.revealed = true;
+                                    revealedCount++;
+                                    nel.classList.add('uncovered');
+                                    
+                                    if (nb.mine) {
+                                        nel.classList.add('bomb');
+                                        nel.textContent = '💣';
+                                        nel.setAttribute('aria-label', 'Mine (game over)');
+                                        loseGame();
+                                        return;
+                                    }
+                                    
+                                    if (nb.adj > 0) {
+                                        nel.textContent = nb.adj;
+                                        nel.style.color = colorForNumber(nb.adj);
+                                        nel.setAttribute('aria-label', `${nb.adj} mines adjacent`);
+                                    } else {
+                                        nel.textContent = '';
+                                        nel.setAttribute('aria-label', 'Empty cell');
+                                        queue.push(ni);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                checkWin();
+            }
+
+            // --- Event Handlers ---
+
+            function onLeftClick(e) {
+                const i = parseInt(e.currentTarget.dataset.index, 10);
+
+                // Chord attempt
+                if (board[i].revealed && board[i].adj > 0) {
+                    chordReveal(i);
+                    return;
+                }
+
+                // First click: place mines outside a 3x3 area around the click
+                if (board.filter(b => b.mine).length === 0) {
+                    placeMines(i);
+                }
+
+                revealCell(i);
+            }
+
+            function onRightClick(e) {
+                e.preventDefault();
+                if (gameOver) return;
+                
+                const i = parseInt(e.currentTarget.dataset.index, 10);
+                const cell = board[i];
+                const el = cells[i];
+
+                if (cell.revealed) return;
+
+                cell.flagged = !cell.flagged;
+                
+                if (cell.flagged) {
+                    el.classList.add('flagged');
+                    el.textContent = '🚩';
+                    el.setAttribute('aria-label', 'Flagged cell');
+                    flags++;
+                } else {
+                    el.classList.remove('flagged');
+                    el.textContent = '';
+                    el.setAttribute('aria-label', 'covered cell');
+                    flags = Math.max(0, flags - 1);
+                }
+                
+                updateStats();
+            }
+
+            function onChordAttempt(e) {
+                const i = parseInt(e.currentTarget.dataset.index, 10);
+                if (board[i].revealed && board[i].adj > 0) {
+                    chordReveal(i);
+                }
+            }
+
+            function chordReveal(i) {
+                if (gameOver) return;
+                
+                const p = xy(i);
+                const needed = board[i].adj;
+                let flagCount = 0;
+                const around = [];
+
+                // Count flags and collect neighbors
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        
+                        const nx = p.x + dx;
+                        const ny = p.y + dy;
+                        
+                        if (!inBounds(nx, ny)) continue;
+                        
+                        const ni = idx(nx, ny);
+                        around.push(ni);
+                        
+                        if (board[ni].flagged) {
+                            flagCount++;
+                        }
+                    }
+                }
+
+                // If flag count matches the number, reveal unflagged neighbors
+                if (flagCount !== needed) return;
+
+                for (const ni of around) {
+                    if (!board[ni].flagged && !board[ni].revealed) {
+                        revealCell(ni);
+                    }
+                }
+            }
+
+            // --- Game State Outcome Functions ---
+
+            function loseGame() {
+                gameOver = true;
+                // Reveal all mines
+                for (let i = 0; i < board.length; i++) {
+                    if (board[i].mine && !board[i].revealed) {
+                        const el = cells[i];
+                        el.classList.add('uncovered', 'bomb');
+                        el.textContent = '💣';
+                        el.setAttribute('aria-label', 'Mine');
+                    }
+                }
+                resetBtn.textContent = 'Play again';
+            }
+
+            function checkWin() {
+                const total = width * height;
+                if (revealedCount === total - mineCount) {
+                    gameOver = true;
+                    resetBtn.textContent = 'New Game';
+                    setTimeout(() => alert('You cleared the board — well played!'), 50);
+                }
+            }
+
+            // --- Initialization Function ---
+            
+            function initGame(newSizeNewMines) {
+                setDefaultsFromControls();
+                
+                width = size;
+                height = size;
+                
+                if (newSizeNewMines) {
+                    mineCount = parseInt(minesRange.value, 10);
+                } else {
+                    // Initial mine count calculation if none is set
+                    mineCount = parseInt(minesRange.value, 10) || Math.floor(width * height * 0.155);
+                    minesRange.value = mineCount;
+                }
+                
+                minesLabel.textContent = mineCount;
+                
+                createEmptyBoard();
+                buildDOM();
+                
+                flags = 0;
+                revealedCount = 0;
+                gameOver = false;
+                
+                updateStats();
+                resetBtn.textContent = 'New Game';
+            }
+
+            // --- Event Listeners for Controls ---
+
+            sizeSelect.addEventListener('change', () => {
+                setDefaultsFromControls();
+                const defaultM = Math.floor(width * height * 0.155);
+                minesRange.value = Math.min(parseInt(minesRange.value, 10) || defaultM, parseInt(minesRange.max, 10));
+                minesLabel.textContent = minesRange.value;
+                initGame(true);
+            });
+
+            minesRange.addEventListener('input', () => {
+                minesLabel.textContent = minesRange.value;
+            });
+
+            minesRange.addEventListener('change', () => {
+                initGame(true);
+            });
+
+            resetBtn.addEventListener('click', () => {
+                initGame(true);
+            });
+
+            // --- Keyboard Navigation and Controls ---
+
+            document.addEventListener('keydown', (e) => {
+                const active = document.activeElement;
+                if (!active || !active.classList.contains('cell')) return;
+
+                const i = parseInt(active.dataset.index, 10);
+                
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    active.click();
+                } else if (e.key.toLowerCase() === 'f') {
+                    e.preventDefault();
+                    onRightClick({
+                        preventDefault: () => {},
+                        currentTarget: active
+                    });
+                } else if (e.key === 'ArrowRight') {
+                    const pos = xy(i);
+                    const nx = pos.x + 1;
+                    const ny = pos.y;
+                    if (inBounds(nx, ny)) cells[idx(nx, ny)].focus();
+                } else if (e.key === 'ArrowLeft') {
+                    const pos = xy(i);
+                    const nx = pos.x - 1;
+                    const ny = pos.y;
+                    if (inBounds(nx, ny)) cells[idx(nx, ny)].focus();
+                } else if (e.key === 'ArrowUp') {
+                    const pos = xy(i);
+                    const nx = pos.x;
+                    const ny = pos.y - 1;
+                    if (inBounds(nx, ny)) cells[idx(nx, ny)].focus();
+                } else if (e.key === 'ArrowDown') {
+                    const pos = xy(i);
+                    const nx = pos.x;
+                    const ny = pos.y + 1;
+                    if (inBounds(nx, ny)) cells[idx(nx, ny)].focus();
+                }
+            });
+
+            // Initial setup
+            setDefaultsFromControls();
+            initGame(false);
+        })();
+    </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
