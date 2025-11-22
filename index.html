@@ -4,7 +4,7 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <title>wegez.fi Minesweeper</title>
-    <meta name="description" content="wegez.fi Minesweeper: Modern dark theme."/>
+    <meta name="description" content="wegez.fi Minesweeper with modern dark theme."/>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,13 +43,14 @@
             gap: 6px;
             touch-action: none;
             user-select: none;
+            max-width: 100%; 
         }
         
-        /* Cell sizing based on board size */
+        /* Base styles for a cell (applies to all screens) */
         .cell {
-            width: 28px;
-            height: 28px;
-            font-size: 13px;
+            /* Let the grid template handle width/height for fluidity */
+            width: auto;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -60,24 +61,15 @@
             box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
             cursor: pointer;
             color: var(--bg);
-        }
-        
-        /* Sizing adjustments for larger grids */
-        [data-size="30"] .cell {
-            width: 22px;
-            height: 22px;
-            font-size: 11px;
-        }
-
-        [data-size="40"] .cell {
-            width: 20px;
-            height: 20px;
-            font-size: 10px;
+            /* Set a max size for aesthetic on large screens */
+            max-width: 28px; 
+            max-height: 28px;
+            font-size: 13px;
         }
         
         .cell.uncovered {
             background: linear-gradient(180deg, #1e293b, #101925);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1); 
             color: var(--muted);
             cursor: default;
             box-shadow: none;
@@ -129,12 +121,25 @@
             gap: 8px;
         }
         
-        /* Original media query kept, though most sizing is handled via data-size now */
+        /* 📱 Mobile Responsiveness: Fluid Scaling for Small Screens */
         @media (max-width: 900px) {
+            .board {
+                /* Reduce gap on small screens to fit more cells */
+                gap: 1vw; 
+            }
             .cell {
-                width: 22px;
-                height: 22px;
-                font-size: 11px;
+                /* Ensure cells can fill width and height */
+                width: 100%;
+                height: 100%;
+                /* Override max-width to allow full scaling */
+                max-width: none;
+                max-height: none;
+            }
+            
+            /* Aggressive font size reduction for very large grids on small screens */
+            [data-size="30"] .cell,
+            [data-size="40"] .cell {
+                font-size: 9px;
             }
         }
     </style>
@@ -146,7 +151,7 @@
         <header class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-extrabold">wegez.fi Minesweeper</h1>
-                <p class="text-sm text-gray-400">Modern dark theme, waste some time :)</p>
+                <p class="text-sm text-gray-400">Waste some time :)</p>
             </div>
             <div class="controls">
                 <div class="stats small">
@@ -174,7 +179,7 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <div class="small">Left-click: reveal • Right-click: flag</div>
+                    <div class="small">Left-click: reveal • Long-press/Right-click: flag</div>
                 </div>
             </section>
             
@@ -199,7 +204,7 @@
             const minesRange = document.getElementById('mines-range');
             const minesLabel = document.getElementById('mines-label');
 
-            // --- Game State Variables ---
+            // --- Game State Variables and Touch Logic ---
             let size = parseInt(sizeSelect.value, 10);
             let width = size;
             let height = size;
@@ -209,6 +214,9 @@
             let flags = 0;
             let revealedCount = 0;
             let gameOver = false;
+
+            let touchStartTime = 0;
+            const LONG_PRESS_DURATION = 500; // milliseconds
 
             // --- Control and Initialization Functions ---
 
@@ -243,7 +251,7 @@
                 while (currentIndex !== 0) {
                     randomIndex = Math.floor(Math.random() * currentIndex);
                     currentIndex--;
-                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                    [array[currentIndex], array[randomIndex]] = [array[currentIndex], array[randomIndex]];
                 }
                 return array;
             }
@@ -348,7 +356,8 @@
 
             function buildDOM() {
                 boardEl.innerHTML = '';
-                boardEl.style.gridTemplateColumns = `repeat(${width}, 1fr)`; // Use 1fr for flex grid size
+                // Use 1fr so columns scale to fit the container width
+                boardEl.style.gridTemplateColumns = `repeat(${width}, 1fr)`; 
                 boardEl.dataset.size = size; // Set data attribute for CSS sizing
                 cells = [];
                 
@@ -366,6 +375,8 @@
                         el.addEventListener('click', onLeftClick);
                         el.addEventListener('contextmenu', onRightClick);
                         el.addEventListener('dblclick', onChordAttempt);
+                        el.addEventListener('touchstart', onTouchStart, { passive: true });
+                        el.addEventListener('touchend', onTouchEnd);
                         
                         fragment.appendChild(el);
                         cells.push(el);
@@ -453,9 +464,45 @@
                 checkWin();
             }
 
-            // --- Event Handlers ---
+            // --- Touch Handlers ---
+
+            function onTouchStart(e) {
+                if (e.touches.length > 1) return;
+                const target = e.currentTarget;
+                touchStartTime = Date.now();
+                
+                // Only start a timer if the cell isn't revealed
+                if (!board[parseInt(target.dataset.index, 10)].revealed) {
+                    target.longPressTimer = setTimeout(() => {
+                        onRightClick({
+                            preventDefault: () => {},
+                            currentTarget: target,
+                            isLongPress: true // Signal it came from a long press
+                        });
+                    }, LONG_PRESS_DURATION);
+                }
+            }
+
+            function onTouchEnd(e) {
+                const target = e.currentTarget;
+                clearTimeout(target.longPressTimer);
+                
+                const duration = Date.now() - touchStartTime;
+                const i = parseInt(target.dataset.index, 10);
+                
+                // If it was a long press, prevent the accidental "click" that follows touchend
+                if (duration >= LONG_PRESS_DURATION && !board[i].revealed) {
+                    e.preventDefault(); 
+                    return; 
+                }
+            }
+
+            // --- Mouse/Click Handlers ---
 
             function onLeftClick(e) {
+                // Ignore accidental clicks immediately following a detected long press
+                if (e.isTrusted && Date.now() - touchStartTime < LONG_PRESS_DURATION && Date.now() - touchStartTime > 0) return;
+
                 const i = parseInt(e.currentTarget.dataset.index, 10);
 
                 // Chord attempt
@@ -564,7 +611,7 @@
                 if (revealedCount === total - mineCount) {
                     gameOver = true;
                     resetBtn.textContent = 'New Game';
-                    setTimeout(() => alert('You cleared the board — well played!'), 50);
+                    setTimeout(() => alert('You cleared the board - well played!'), 50);
                 }
             }
 
