@@ -9,7 +9,35 @@
     .wrap{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px}
     #score{font-size:24px;font-weight:600;margin-bottom:4px}
     canvas{background:#000;border-radius:14px;touch-action:none;display:block}
-    button{padding:8px 16px;border:0;border-radius:8px;background:#2e7d32;color:white;font-size:16px}
+    
+    /* Button Layout */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    button, .download-link {
+      padding: 10px 20px;
+      border: 0;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: opacity 0.2s;
+    }
+
+    button:active, .download-link:active { opacity: 0.8; }
+
+    #restart { background: #2e7d32; color: white; }
+    
+    .download-link { 
+      background: #4ab3ff; /* Matches snake body color */
+      color: #000; 
+    }
     
     /* Container to position the overlay over the canvas */
     .canvas-container {
@@ -23,8 +51,8 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%; /* Uses 100% of the parent .canvas-container */
-      height: 100%; /* Uses 100% of the parent .canvas-container */
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -57,7 +85,15 @@
       <div id="finalScore" class="final-score-text">Score: 0</div>
     </div>
   </div>
-  <button id="restart">Restart</button>
+
+  <div class="controls">
+    <button id="restart">Restart</button>
+    <a href="https://wegez.fi/files/Kesaillan_valssi.pdf" 
+       class="download-link" 
+       download="Kesaillan_valssi.pdf">
+       Download PDF
+    </a>
+  </div>
 </div>
 
 <script>
@@ -81,7 +117,7 @@ function reset(){
   running=true;
   last=0;
   scoreEl.textContent='Score: '+score;
-  gameOverOverlay.style.display = 'none'; // Hide game over overlay
+  gameOverOverlay.style.display = 'none';
 }
 
 function randFood(){
@@ -140,14 +176,12 @@ function drawRoundedBorder(ctx,x,y,w,h,r){
 
 function loop(t){
   if(!last) last=t;
-  const dt = t - last; // Calculate the time elapsed since the last frame
-  const frameDelay = 1000 / SPEED; // Time required between steps in ms
+  const dt = t - last;
+  const frameDelay = 1000 / SPEED;
 
-  // Only step if the game is running AND enough time has passed
   if(running && dt > frameDelay){
     step();
     draw();
-    // Adjust last to smooth out timing issues for consistent speed
     last = t - (dt % frameDelay); 
   }
   requestAnimationFrame(loop);
@@ -156,18 +190,14 @@ function loop(t){
 function gameOver(){
   running=false;
   finalScoreEl.textContent='Score: '+score;
-  gameOverOverlay.style.display = 'flex'; // Show game over overlay
+  gameOverOverlay.style.display = 'flex';
 }
 
 window.addEventListener('keydown',e=>{
   const key = e.key.toLowerCase();
-  
-  // Prevent default browser actions (like scrolling) for game keys
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
     e.preventDefault(); 
   }
-
-  // Handle movement inputs
   if(key==='arrowup' || key==='w')pushDir(0,-1);
   else if(key==='arrowdown' || key==='s')pushDir(0,1);
   else if(key==='arrowleft' || key==='a')pushDir(-1,0);
@@ -187,7 +217,6 @@ canvas.addEventListener('touchend',e=>{
     if(dy>20)pushDir(0,1); else if(dy<-20)pushDir(0,-1);
   }
 });
-
 
 restartBtn.onclick=()=>{reset();draw();};
 reset();draw();requestAnimationFrame(loop);
