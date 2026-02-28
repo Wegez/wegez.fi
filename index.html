@@ -10,12 +10,14 @@ html,body{margin:0;padding:0;height:100%;display:flex;justify-content:center;ali
 #score{font-size:24px;font-weight:600;margin-bottom:4px}
 canvas{background:#000;border-radius:14px;touch-action:none;display:block}
 .controls{display:flex;gap:12px;margin-top:10px}
-.download-link,.nav-link{padding:10px 20px;border:0;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:opacity .2s}
-.download-link:active,.nav-link:active{opacity:.8}
+.download-link,.nav-link,.restart-btn{padding:10px 20px;border:0;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:opacity .2s;font-family:sans-serif}
+.download-link:active,.nav-link:active,.restart-btn:active{opacity:.8}
 .download-link{background:#4ab3ff;color:#000}
 .nav-link{background:#ffb84a;color:#000}
+.restart-btn{background:#fff;color:#000;margin-top:20px}
 .canvas-container{position:relative;border-radius:14px;overflow:hidden}
-.game-over-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,.7);color:#fff;text-align:center;font-size:36px;font-weight:bold;pointer-events:none;z-index:10}
+.game-over-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,.85);color:#fff;text-align:center;z-index:10;pointer-events:none;opacity:0;transition:opacity 0.2s}
+.game-over-overlay.visible{pointer-events:auto;opacity:1}
 .game-over-text{font-size:48px;margin-bottom:10px}
 .final-score-text{font-size:28px;color:#79f}
 </style>
@@ -24,15 +26,14 @@ canvas{background:#000;border-radius:14px;touch-action:none;display:block}
 
 <div class="wrap">
 <div id="score">Score: 0 | High Score: 0</div>
-
 <div class="canvas-container">
 <canvas id="c"></canvas>
-<div id="gameOverOverlay" class="game-over-overlay" style="display:none;">
+<div id="gameOverOverlay" class="game-over-overlay">
 <div class="game-over-text">GAME OVER</div>
 <div id="finalScore" class="final-score-text">Score: 0</div>
+<button id="restartBtn" class="restart-btn">Restart Game</button>
 </div>
 </div>
-
 <div class="controls">
 <a href="https://wegez.fi/files/Kesaillan_valssi.pdf" class="download-link" target="_blank" rel="noopener noreferrer">View PDF</a>
 <a href="/timestamps" class="nav-link">Timestamp Generator</a>
@@ -40,194 +41,151 @@ canvas{background:#000;border-radius:14px;touch-action:none;display:block}
 </div>
 
 <script>
-const CELL=20,COLS=20,ROWS=28,SPEED=9;
-
+const CELL=20,COLS=20,ROWS=28,SPEED=9,OFF=10;
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
-canvas.width=COLS*CELL;
-canvas.height=ROWS*CELL;
-
 const scoreEl=document.getElementById('score');
 const gameOverOverlay=document.getElementById('gameOverOverlay');
 const finalScoreEl=document.getElementById('finalScore');
+const restartBtn=document.getElementById('restartBtn');
 
-let snake,snakeSet,dir,food;
-let score=0,highScore=0;
-let running=false,started=false;
+canvas.width=COLS*CELL+OFF*2;
+canvas.height=ROWS*CELL+OFF*2;
 
-let lastTime=0;
-let accumulator=0;
+let snake,snakeSet,dir,food,score=0,highScore=0,running=false,started=false;
+let lastTime=0,accumulator=0,inputQueue=[];
 const frameDelay=1000/SPEED;
 
-const activeKeys=new Set();
-let keyOrder=[];
-
-highScore=parseInt(localStorage.getItem('snakeHighScore'))||0;
+try {
+    highScore=parseInt(localStorage.getItem('snakeHighScore'))||0;
+} catch(e) {
+    highScore=0;
+}
 
 function updateScore(){
-scoreEl.textContent=`Score: ${score} | High Score: ${highScore}`;
+    scoreEl.textContent=`Score: ${score} | High Score: ${highScore}`;
 }
 
 function reset(){
-snake=[{x:10,y:14},{x:9,y:14},{x:8,y:14}];
-snakeSet=new Set(snake.map(s=>s.x+","+s.y));
-dir={x:1,y:0};
-food=randFood();
-score=0;
-running=true;
-started=false;
-lastTime=0;
-accumulator=0;
-activeKeys.clear();
-keyOrder=[];
-gameOverOverlay.style.display='none';
-updateScore();
-draw();
+    snake=[{x:10,y:14},{x:9,y:14},{x:8,y:14}];
+    snakeSet=new Set(snake.map(s=>s.x+","+s.y));
+    dir={x:1,y:0};
+    inputQueue=[];
+    food=randFood();
+    score=0;
+    running=true;
+    started=false;
+    lastTime=0;
+    accumulator=0;
+    gameOverOverlay.classList.remove('visible');
+    updateScore();
+    draw();
 }
 
 function randFood(){
-let f;
-do{
-f={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)};
-}while(snakeSet.has(f.x+","+f.y));
-return f;
+    let f;
+    do {
+        f={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)};
+    } while(snakeSet.has(f.x+","+f.y));
+    return f;
 }
 
 function keyToDir(key){
-if(key==='arrowup'||key==='w') return {x:0,y:-1};
-if(key==='arrowdown'||key==='s') return {x:0,y:1};
-if(key==='arrowleft'||key==='a') return {x:-1,y:0};
-if(key==='arrowright'||key==='d') return {x:1,y:0};
-return null;
-}
-
-function resolveDirection(){
-for(let i=keyOrder.length-1;i>=0;i--){
-const key=keyOrder[i];
-if(!activeKeys.has(key)) continue;
-const d=keyToDir(key);
-if(!d) continue;
-if(!(d.x===-dir.x && d.y===-dir.y)){
-return d;
-}
-}
-return dir;
+    const keys={'arrowup':{x:0,y:-1},'w':{x:0,y:-1},'arrowdown':{x:0,y:1},'s':{x:0,y:1},'arrowleft':{x:-1,y:0},'a':{x:-1,y:0},'arrowright':{x:1,y:0},'d':{x:1,y:0}};
+    return keys[key]||null;
 }
 
 function step(){
+    if(inputQueue.length>0){
+        const next=inputQueue.shift();
+        if(!(next.x===-dir.x&&next.y===-dir.y)) dir=next;
+    }
 
-dir=resolveDirection();
+    const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
 
-const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS||snakeSet.has(head.x+","+head.y)){
+        return gameOver();
+    }
 
-if(
-head.x<0||head.x>=COLS||
-head.y<0||head.y>=ROWS||
-snakeSet.has(head.x+","+head.y)
-){
-return gameOver();
-}
+    snake.unshift(head);
+    snakeSet.add(head.x+","+head.y);
 
-snake.unshift(head);
-snakeSet.add(head.x+","+head.y);
-
-if(head.x===food.x&&head.y===food.y){
-score++;
-if(score>highScore){
-highScore=score;
-localStorage.setItem('snakeHighScore',highScore);
-}
-updateScore();
-food=randFood();
-}else{
-const tail=snake.pop();
-snakeSet.delete(tail.x+","+tail.y);
-}
+    if(head.x===food.x&&head.y===food.y){
+        score++;
+        if(score>highScore){
+            highScore=score;
+            try{localStorage.setItem('snakeHighScore',highScore);}catch(e){}
+        }
+        updateScore();
+        food=randFood();
+    }else{
+        const tail=snake.pop();
+        snakeSet.delete(tail.x+","+tail.y);
+    }
 }
 
 function draw(){
-ctx.fillStyle='#000';
-ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#000';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 
-ctx.fillStyle='#f4a261';
-ctx.fillRect(food.x*CELL+2,food.y*CELL+2,CELL-4,CELL-4);
+    ctx.fillStyle='#f4a261';
+    ctx.fillRect(food.x*CELL+OFF+2,food.y*CELL+OFF+2,CELL-4,CELL-4);
 
-for(let i=0;i<snake.length;i++){
-ctx.fillStyle=i===0?'#79f':'#4ab3ff';
-ctx.fillRect(snake[i].x*CELL+1,snake[i].y*CELL+1,CELL-2,CELL-2);
-}
+    snake.forEach((p,i)=>{
+        ctx.fillStyle=i===0?'#79f':'#4ab3ff';
+        ctx.fillRect(p.x*CELL+OFF+1,p.y*CELL+OFF+1,CELL-2,CELL-2);
+    });
 
-drawBorder();
+    ctx.lineWidth=4;
+    ctx.strokeStyle='#123';
+    ctx.beginPath();
+    ctx.roundRect(OFF-2,OFF-2,COLS*CELL+4,ROWS*CELL+4,6);
+    ctx.stroke();
 
-if(!started&&running){
-ctx.fillStyle="rgba(255,255,255,0.7)";
-ctx.font="20px sans-serif";
-ctx.textAlign="center";
-ctx.fillText("Press arrow keys or swipe to start",canvas.width/2,canvas.height/2);
-}
-}
-
-function drawBorder(){
-ctx.lineWidth=8;
-ctx.strokeStyle='#123';
-ctx.beginPath();
-ctx.moveTo(14,0);
-ctx.arcTo(canvas.width,0,canvas.width,canvas.height,14);
-ctx.arcTo(canvas.width,canvas.height,0,canvas.height,14);
-ctx.arcTo(0,canvas.height,0,0,14);
-ctx.arcTo(0,0,canvas.width,0,14);
-ctx.closePath();
-ctx.stroke();
+    if(!started&&running){
+        ctx.fillStyle="rgba(255,255,255,0.7)";
+        ctx.font="18px sans-serif";
+        ctx.textAlign="center";
+        ctx.fillText("Press arrow keys to start",canvas.width/2,canvas.height/2);
+    }
 }
 
 function loop(t){
-requestAnimationFrame(loop);
-
-if(!running||!started) return;
-
-if(!lastTime) lastTime=t;
-const delta=t-lastTime;
-lastTime=t;
-accumulator+=delta;
-
-while(accumulator>=frameDelay){
-step();
-accumulator-=frameDelay;
-}
-
-draw();
+    requestAnimationFrame(loop);
+    if(!running||!started) return;
+    if(!lastTime) lastTime=t;
+    accumulator+=t-lastTime;
+    lastTime=t;
+    while(accumulator>=frameDelay){
+        step();
+        accumulator-=frameDelay;
+    }
+    draw();
 }
 
 function gameOver(){
-running=false;
-finalScoreEl.textContent='Score: '+score;
-gameOverOverlay.style.display='flex';
+    running=false;
+    finalScoreEl.textContent='Score: '+score;
+    gameOverOverlay.classList.add('visible');
 }
 
 window.addEventListener('keydown',e=>{
-const key=e.key.toLowerCase();
-if(!keyToDir(key)) return;
-e.preventDefault();
-
-if(!started){
-started=true;
-lastTime=performance.now();
-}
-
-if(!activeKeys.has(key)){
-activeKeys.add(key);
-keyOrder.push(key);
-}
+    const newDir=keyToDir(e.key.toLowerCase());
+    if(!newDir) return;
+    e.preventDefault();
+    if(!started&&running){
+        started=true;
+        lastTime=performance.now();
+    }
+    const lastQueued=inputQueue.length>0?inputQueue[inputQueue.length-1]:dir;
+    if(newDir.x!==lastQueued.x||newDir.y!==lastQueued.y){
+        if(inputQueue.length<2) inputQueue.push(newDir);
+    }
 });
 
-window.addEventListener('keyup',e=>{
-const key=e.key.toLowerCase();
-activeKeys.delete(key);
-});
-
+restartBtn.addEventListener('click',reset);
 reset();
 requestAnimationFrame(loop);
 </script>
-
 </body>
 </html>
