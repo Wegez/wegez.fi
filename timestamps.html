@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discord Timestamps</title>
+
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #36393f;
+    color: #dcddde;
+    padding: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+h1 { color: #ffffff; margin-bottom: 5px; }
+
+.subtitle {
+    color: #b9bbbe;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.control-group {
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+input[type="datetime-local"] {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #202225;
+    background: #40444b;
+    color: white;
+    color-scheme: dark;
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: none;
+    background: #5865F2;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover { background: #4752C4; }
+
+button.secondary { background: #4f545c; }
+button.secondary:hover { background: #686d73; }
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #b9bbbe;
+    cursor: pointer;
+    user-select: none;
+}
+
+.output-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.output-item {
+    background: #2f3136;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    user-select: none;
+}
+
+.output-item:hover { background: #393c43; }
+
+.output-item:active {
+    background: #43b581;
+    transform: scale(0.99);
+    color: white;
+}
+
+.output-item:active .code-preview { color: white; }
+
+.output-item:focus {
+    outline: 2px solid #5865F2;
+}
+
+.format-name {
+    font-weight: bold;
+    width: 160px;
+    color: #ffffff;
+}
+
+.code-preview {
+    font-family: monospace;
+    font-size: 15px;
+    color: #a3a6aa;
+    cursor: pointer;
+}
+
+.copied-msg {
+    color: #43b581;
+    font-weight: bold;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Discord Timestamps</h1>
+<p class="subtitle">Click or press Enter/Space to copy the code.</p>
+
+<div class="control-group">
+    <input type="datetime-local" id="datetime-picker" step="1">
+    <button id="reset-btn">Reset</button>
+    <button id="copy-now-btn" class="secondary">Copy Current (Relative)</button>
+
+    <label class="toggle-container">
+        <input type="checkbox" id="live-toggle"> Live Mode
+    </label>
+
+    <span id="copied-notification"
+          class="copied-msg"
+          aria-live="polite"
+          role="status">
+        Copied!
+    </span>
+</div>
+
+<ul class="output-list" id="output-container"></ul>
+
+<script>
+(() => {
+
+const picker = document.getElementById('datetime-picker');
+const resetBtn = document.getElementById('reset-btn');
+const copyNowBtn = document.getElementById('copy-now-btn');
+const liveToggle = document.getElementById('live-toggle');
+const outputContainer = document.getElementById('output-container');
+const copiedNotification = document.getElementById('copied-notification');
+
+let liveInterval = null;
+let debounceTimeout = null;
+
+const formats = [
+    { format: 'R', name: 'Relative Time' },
+    { format: 't', name: 'Short Time' },
+    { format: 'T', name: 'Long Time' },
+    { format: 'd', name: 'Short Date' },
+    { format: 'D', name: 'Long Date' },
+    { format: 'f', name: 'Short Date/Time' },
+    { format: 'F', name: 'Long Date/Time' }
+];
+
+function parseLocalDateTime(value) {
+    if (!value) return null;
+    const [datePart, timePart] = value.split('T');
+    if (!datePart || !timePart) return null;
+
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute, second] = timePart.split(':').map(Number);
+
+    return new Date(year, month - 1, day, hour, minute, second || 0);
+}
+
+function setNow() {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    picker.value = local.toISOString().slice(0, 19);
+    updateTimestamps();
+}
+
+function disableLiveMode() {
+    liveToggle.checked = false;
+    clearInterval(liveInterval);
+    liveInterval = null;
+}
+
+function showCopied() {
+    copiedNotification.style.opacity = '1';
+    setTimeout(() => {
+        copiedNotification.style.opacity = '0';
+    }, 2000);
+}
+
+function fallbackCopy(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    showCopied();
+}
+
+function copyToClipboard(text) {
+    if (!text) return;
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+            .then(showCopied)
+            .catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function initOutputList() {
+    const fragment = document.createDocumentFragment();
+
+    formats.forEach(f => {
+        const li = document.createElement('li');
+        li.className = 'output-item';
+        li.tabIndex = 0;
+        li.setAttribute('role', 'button');
+        li.setAttribute('aria-label', `Copy ${f.name} Discord timestamp`);
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'format-name';
+        nameDiv.textContent = f.name;
+
+        const codeDiv = document.createElement('div');
+        codeDiv.className = 'code-preview';
+
+        li.appendChild(nameDiv);
+        li.appendChild(codeDiv);
+        fragment.appendChild(li);
+    });
+
+    outputContainer.appendChild(fragment);
+}
+
+function updateTimestamps() {
+    const date = parseLocalDateTime(picker.value);
+    if (!date || isNaN(date.getTime())) return;
+
+    const selectedTime = Math.floor(date.getTime() / 1000);
+
+    const items = outputContainer.querySelectorAll('.output-item');
+
+    items.forEach((item, index) => {
+        const discordCode = `<t:${selectedTime}:${formats[index].format}>`;
+        item.querySelector('.code-preview').textContent = discordCode;
+        item.dataset.code = discordCode;
+    });
+}
+
+function debounceUpdate() {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(updateTimestamps, 250);
+}
+
+function toggleLiveMode() {
+    clearInterval(liveInterval);
+
+    if (liveToggle.checked) {
+        setNow();
+        liveInterval = setInterval(setNow, 1000);
+    }
+}
+
+outputContainer.addEventListener('click', (e) => {
+    const item = e.target.closest('.output-item');
+    if (!item) return;
+    copyToClipboard(item.dataset.code);
+});
+
+outputContainer.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+
+    const item = e.target.closest('.output-item');
+    if (!item) return;
+
+    e.preventDefault();
+    copyToClipboard(item.dataset.code);
+});
+
+picker.addEventListener('input', () => {
+    if (liveToggle.checked) disableLiveMode();
+    debounceUpdate();
+});
+
+resetBtn.addEventListener('click', () => {
+    disableLiveMode();
+    setNow();
+});
+
+copyNowBtn.addEventListener('click', () => {
+    const currentExactSecond = Math.floor(Date.now() / 1000);
+    copyToClipboard(`<t:${currentExactSecond}:R>`);
+});
+
+liveToggle.addEventListener('change', toggleLiveMode);
+
+initOutputList();
+setNow();
+
+})();
+</script>
+
+</body>
+</html>
